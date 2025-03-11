@@ -58,14 +58,14 @@ RSpec.describe GlobalIdSerialiser do
     it "deserialises simple types" do
       @json = JSON.generate({hello: "world", number: 999})
 
-      @expected_data = {"hello" => "world", "number" => 999}
+      @expected_data = {hello: "world", number: 999}
       expect(GlobalIdSerialiser.load(@json)).to eq @expected_data
     end
 
     it "deserialises nested hashes and arrays" do
       @json = JSON.generate({some: {more: "data"}, many: %w[things in this array]})
 
-      @expected_data = {"some" => {"more" => "data"}, "many" => %w[things in this array]}
+      @expected_data = {some: {more: "data"}, many: %w[things in this array]}
       expect(GlobalIdSerialiser.load(@json)).to eq @expected_data
     end
 
@@ -73,7 +73,7 @@ RSpec.describe GlobalIdSerialiser do
       @alice = User.new(id: 123, name: "Alice")
       @json = JSON.generate({user: @alice.to_global_id.to_s})
 
-      @expected_data = {"user" => @alice}
+      @expected_data = {user: @alice}
       expect(GlobalIdSerialiser.load(@json)).to eq @expected_data
     end
 
@@ -81,7 +81,7 @@ RSpec.describe GlobalIdSerialiser do
       @alice = User.new(id: 123, name: "Alice")
       @bob = User.new(id: 456, name: "Bob")
       @json = JSON.generate({nested: {user: @alice.to_global_id.to_s}, people: [@alice.to_global_id.to_s, @bob.to_global_id.to_s]})
-      @expected_data = {"nested" => {"user" => @alice}, "people" => [@alice, @bob]}
+      @expected_data = {nested: {user: @alice}, people: [@alice, @bob]}
 
       expect(GlobalIdSerialiser.load(@json)).to eq @expected_data
     end

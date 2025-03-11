@@ -36,7 +36,7 @@ class GlobalIdSerialiser
 
   private_class_method def self.unpack_array(arguments) = arguments.map { |a| unpack a }
 
-  private_class_method def self.unpack_hash(arguments) = arguments.to_h { |key, value| [key, unpack(value)] }
+  private_class_method def self.unpack_hash(arguments) = arguments.to_h { |key, value| [key.to_sym, unpack(value)] }
 
   private_class_method def self.unpack_string(argument) = argument.start_with?("gid://") ? unpack_global_id(argument) : argument
 
