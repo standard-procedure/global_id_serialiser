@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    standard_procedure_global_id_serialiser (0.1.0)
+    standard_procedure_global_id_serialiser (0.1.1)
       globalid (~> 1.2)
       json (~> 2.10)
 
