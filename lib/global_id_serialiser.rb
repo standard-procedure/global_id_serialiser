@@ -3,13 +3,14 @@
 require_relative "global_id_serialiser/version"
 
 require "global_id"
+require "json"
 
 class GlobalIdSerialiser
-  def self.dump(data) = pack(data)
+  def self.dump(data) = JSON.generate(pack(data))
 
-  def self.load(json) = unpack(json)
+  def self.load(json) = unpack(JSON.parse(json))
 
-  private def pack argument
+  private_class_method def self.pack argument
     case argument
     when GlobalID::Identification then pack_global_id argument
     when Array then pack_array argument
@@ -18,7 +19,7 @@ class GlobalIdSerialiser
     end
   end
 
-  private def unpack argument
+  private_class_method def self.unpack argument
     case argument
     when String then unpack_string argument
     when Array then unpack_array argument
@@ -27,19 +28,19 @@ class GlobalIdSerialiser
     end
   end
 
-  private def pack_array(arguments) = arguments.map { |a| pack a }
+  private_class_method def self.pack_array(arguments) = arguments.map { |a| pack a }
 
-  private def pack_hash(arguments) = arguments.transform_values { |v| pack v }
+  private_class_method def self.pack_hash(arguments) = arguments.transform_values { |v| pack v }
 
-  private def pack_global_id(argument) = argument.to_global_id.to_s
+  private_class_method def self.pack_global_id(argument) = argument.to_global_id.to_s
 
-  private def unpack_array(arguments) = arguments.map { |a| unpack a }
+  private_class_method def self.unpack_array(arguments) = arguments.map { |a| unpack a }
 
-  private def unpack_hash(arguments) = arguments.to_h { |key, value| [key, unpack(value)] }
+  private_class_method def self.unpack_hash(arguments) = arguments.to_h { |key, value| [key, unpack(value)] }
 
-  private def unpack_string(argument) = argument.start_with?("gid://") ? unpack_global_id(argument) : argument
+  private_class_method def self.unpack_string(argument) = argument.start_with?("gid://") ? unpack_global_id(argument) : argument
 
-  private def unpack_global_id argument
+  private_class_method def self.unpack_global_id argument
     GlobalID::Locator.locate(argument)
   rescue
     nil

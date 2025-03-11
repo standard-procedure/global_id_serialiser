@@ -3,6 +3,7 @@ PATH
   specs:
     standard_procedure_global_id_serialiser (0.1.0)
       globalid (~> 1.2)
+      json (~> 2.10)
 
 GEM
   remote: https://rubygems.org/

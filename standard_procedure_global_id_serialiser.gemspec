@@ -33,4 +33,5 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "globalid", "~> 1.2"
+  spec.add_dependency "json", "~> 2.10"
 end
