@@ -1,39 +1,35 @@
-# StandardProcedureGlobalIdSerialiser
+# GlobalIdSerialiser
 
-TODO: Delete this and the text below, and describe your gem
-
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/standard_procedure_global_id_serialiser`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-## Installation
-
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
-```
-
-If bundler is not being used to manage dependencies, install the gem by executing:
-
-```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
-```
+A [Ruby on Rails serialiser](https://api.rubyonrails.org/classes/ActiveRecord/AttributeMethods/Serialization/ClassMethods.html) that can read and write ActiveRecord models (or any other [GlobalID](https://github.com/rails/globalid)) to your serialised fields.  
 
 ## Usage
 
-TODO: Write usage instructions here
+Create your ActiveRecord model, declaring your serialised field as normal.  But instead of declaring the `coder` as `JSON`, use `GlobalIdSerialiser`.
 
-## Development
+```ruby
+class BlogPost < ApplicationRecord 
+  serialize :data, coder: GlobalIdSerialiser, type: Hash
+end
+```
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+Then go about your day, safely storing your models in your serialised field. 
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+```ruby
+@alice = Person.create name: "Alice"
 
-## Contributing
+@blog_post = BlogPost.create data: { title: "Welcome to my blog", author: @alice }
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/standard_procedure_global_id_serialiser. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/standard_procedure_global_id_serialiser/blob/main/CODE_OF_CONDUCT.md).
+puts @blog_post.data # => { "title": "Welcome to my blog", "author": "gid://my_app/person/1" }
 
-## Code of Conduct
+@reloaded_blog_post = BlogPost.find @blog_post.id 
 
-Everyone interacting in the StandardProcedureGlobalIdSerialiser project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/standard_procedure_global_id_serialiser/blob/main/CODE_OF_CONDUCT.md).
+puts @blog_post.data["author"] # => Person<id: 1, name: "Alice">
+```
+
+## Installation
+
+Add it to your Gemfile.  `bundle install`.  Relax.  
+
+## License
+
+This is licensed under the [LGPL](/LICENSE).  This may or may not make it suitable for your needs.  
