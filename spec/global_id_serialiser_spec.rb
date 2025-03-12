@@ -23,6 +23,37 @@ RSpec.describe GlobalIdSerialiser do
     expect(GlobalIdSerialiser::VERSION).not_to be nil
   end
 
+  describe "marshalling data" do
+    it "marshals simple types" do
+      @data = {hello: "world", number: 999}
+
+      expect(GlobalIdSerialiser.marshal(@data)).to eq @data
+    end
+
+    it "marshals nested hashes and arrays" do
+      @data = {some: {more: "data"}, many: %w[things in this array]}
+
+      expect(GlobalIdSerialiser.marshal(@data)).to eq @data
+    end
+
+    it "marshals models" do
+      @alice = User.new(id: 123, name: "Alice")
+      @data = {user: @alice}
+
+      @expected_data = {user: @alice.to_global_id.to_s}
+      expect(GlobalIdSerialiser.marshal(@data)).to eq @expected_data
+    end
+
+    it "marshals nested models" do
+      @alice = User.new(id: 123, name: "Alice")
+      @bob = User.new(id: 456, name: "Bob")
+      @data = {nested: {user: @alice}, people: [@alice, @bob]}
+
+      @expected_data = {nested: {user: @alice.to_global_id.to_s}, people: [@alice.to_global_id.to_s, @bob.to_global_id.to_s]}
+      expect(GlobalIdSerialiser.marshal(@data)).to eq @expected_data
+    end
+  end
+
   describe "serialising data" do
     it "serialises simple types" do
       @data = {hello: "world", number: 999}
@@ -51,6 +82,37 @@ RSpec.describe GlobalIdSerialiser do
 
       @expected_data = {nested: {user: @alice.to_global_id.to_s}, people: [@alice.to_global_id.to_s, @bob.to_global_id.to_s]}
       expect(GlobalIdSerialiser.dump(@data)).to eq JSON.generate(@expected_data)
+    end
+  end
+
+  describe "unmarshalling data" do
+    it "unmarshals simple types" do
+      @data = {hello: "world", number: 999}
+
+      expect(GlobalIdSerialiser.unmarshal(@data)).to eq @data
+    end
+
+    it "unmarshals nested hashes and arrays" do
+      @data = {some: {more: "data"}, many: %w[things in this array]}
+
+      expect(GlobalIdSerialiser.unmarshal(@data)).to eq @data
+    end
+
+    it "unmarshals models" do
+      @alice = User.new(id: 123, name: "Alice")
+      @data = {user: @alice.to_global_id.to_s}
+
+      @expected_data = {user: @alice}
+      expect(GlobalIdSerialiser.unmarshal(@data)).to eq @expected_data
+    end
+
+    it "unmarshals nested models" do
+      @alice = User.new(id: 123, name: "Alice")
+      @bob = User.new(id: 456, name: "Bob")
+      @data = {nested: {user: @alice.to_global_id.to_s}, people: [@alice.to_global_id.to_s, @bob.to_global_id.to_s]}
+      @expected_data = {nested: {user: @alice}, people: [@alice, @bob]}
+
+      expect(GlobalIdSerialiser.unmarshal(@data)).to eq @expected_data
     end
   end
 
