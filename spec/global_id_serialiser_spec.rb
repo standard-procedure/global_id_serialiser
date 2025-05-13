@@ -15,6 +15,20 @@ RSpec.describe GlobalIdSerialiser do
 
     def self.records = @records ||= {}
   end
+
+  class Document
+    include GlobalID::Identification
+    def initialize id:, filename:
+      @id = id
+      @filename = filename
+      self.class.records[@id.to_s] = self
+    end
+    attr_reader :id, :filename
+
+    def self.find(id) = records[id.to_s]
+
+    def self.records = @records ||= {}
+  end
   # standard:enable Lint/ConstantDefinitionInBlock
 
   before { GlobalID.app = "global_id_serialiser" }
@@ -50,6 +64,20 @@ RSpec.describe GlobalIdSerialiser do
       @data = {nested: {user: @alice}, people: [@alice, @bob]}
 
       @expected_data = {nested: {user: @alice.to_global_id.to_s}, people: [@alice.to_global_id.to_s, @bob.to_global_id.to_s]}
+      expect(GlobalIdSerialiser.marshal(@data)).to eq @expected_data
+    end
+
+    it "marshals multiple models" do
+      @users = (1..10).collect { |i| User.new(id: i, name: i.to_s) }
+      @more_users = (100..110).collect { |i| User.new(id: i, name: i.to_s) }
+      @documents = (1..10).collect { |i| Document.new(id: i, filename: "#{i}.pdf") }
+
+      @data = {users: @users, documents: @documents, more_users: {users: @more_users}}
+
+      @user_ids = @users.map { |u| u.to_global_id.to_s }
+      @more_user_ids = @more_users.map { |u| u.to_global_id.to_s }
+      @document_ids = @documents.map { |d| d.to_global_id.to_s }
+      @expected_data = {users: @user_ids, documents: @document_ids, more_users: {users: @more_user_ids}}
       expect(GlobalIdSerialiser.marshal(@data)).to eq @expected_data
     end
   end
@@ -111,6 +139,21 @@ RSpec.describe GlobalIdSerialiser do
       @bob = User.new(id: 456, name: "Bob")
       @data = {nested: {user: @alice.to_global_id.to_s}, people: [@alice.to_global_id.to_s, @bob.to_global_id.to_s]}
       @expected_data = {nested: {user: @alice}, people: [@alice, @bob]}
+
+      expect(GlobalIdSerialiser.unmarshal(@data)).to eq @expected_data
+    end
+
+    it "unmarshals multiple models" do
+      @users = (1..10).collect { |i| User.new(id: i, name: i.to_s) }
+      @more_users = (100..110).collect { |i| User.new(id: i, name: i.to_s) }
+      @documents = (1..10).collect { |i| Document.new(id: i, filename: "#{i}.pdf") }
+
+      @user_ids = @users.map { |u| u.to_global_id.to_s }
+      @more_user_ids = @more_users.map { |u| u.to_global_id.to_s }
+      @document_ids = @documents.map { |d| d.to_global_id.to_s }
+      @data = {users: @user_ids, documents: @document_ids, more_users: {users: @more_user_ids}}
+
+      @expected_data = {users: @users, documents: @documents, more_users: {users: @more_users}}
 
       expect(GlobalIdSerialiser.unmarshal(@data)).to eq @expected_data
     end
