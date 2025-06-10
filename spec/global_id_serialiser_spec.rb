@@ -4,13 +4,12 @@ RSpec.describe GlobalIdSerialiser do
   # standard:disable Lint/ConstantDefinitionInBlock
   class User
     include GlobalID::Identification
-    def initialize id:, name:, documents: []
+    def initialize id:, name:
       @id = id
       @name = name
-      @documents = documents
       self.class.records[@id.to_s] = self
     end
-    attr_reader :id, :name, :documents
+    attr_reader :id, :name
 
     def self.find(id) = records[id.to_s]
 
@@ -19,13 +18,12 @@ RSpec.describe GlobalIdSerialiser do
 
   class Document
     include GlobalID::Identification
-    def initialize id:, filename:, author: nil
+    def initialize id:, filename:
       @id = id
       @filename = filename
-      @author = nil
       self.class.records[@id.to_s] = self
     end
-    attr_reader :id, :filename, :author
+    attr_reader :id, :filename
 
     def self.find(id) = records[id.to_s]
 
@@ -43,13 +41,13 @@ RSpec.describe GlobalIdSerialiser do
     it "writes simple types" do
       @data = {hello: "world", number: 999}
 
-      expect(GlobalIdSerialiser.to_json(@data)).to eq @data
+      expect(GlobalIdSerialiser.to_h(@data)).to eq @data
     end
 
     it "writes nested hashes and arrays" do
       @data = {some: {more: "data"}, many: %w[things in this array]}
 
-      expect(GlobalIdSerialiser.to_json(@data)).to eq @data
+      expect(GlobalIdSerialiser.to_h(@data)).to eq @data
     end
 
     it "writes models" do
@@ -57,7 +55,7 @@ RSpec.describe GlobalIdSerialiser do
       @data = {user: @alice}
 
       @expected_data = {user: @alice.to_global_id.to_s}
-      expect(GlobalIdSerialiser.to_json(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.to_h(@data)).to eq @expected_data
     end
 
     it "writes nested models" do
@@ -66,7 +64,7 @@ RSpec.describe GlobalIdSerialiser do
       @data = {nested: {user: @alice}, people: [@alice, @bob]}
 
       @expected_data = {nested: {user: @alice.to_global_id.to_s}, people: [@alice.to_global_id.to_s, @bob.to_global_id.to_s]}
-      expect(GlobalIdSerialiser.to_json(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.to_h(@data)).to eq @expected_data
     end
 
     it "writes multiple models" do
@@ -80,7 +78,7 @@ RSpec.describe GlobalIdSerialiser do
       @more_user_ids = @more_users.map { |u| u.to_global_id.to_s }
       @document_ids = @documents.map { |d| d.to_global_id.to_s }
       @expected_data = {users: @user_ids, documents: @document_ids, more_users: {users: @more_user_ids}}
-      expect(GlobalIdSerialiser.to_json(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.to_h(@data)).to eq @expected_data
     end
   end
 
@@ -119,13 +117,13 @@ RSpec.describe GlobalIdSerialiser do
     it "reads simple types" do
       @data = {hello: "world", number: 999}
 
-      expect(GlobalIdSerialiser.from_json(@data)).to eq @data
+      expect(GlobalIdSerialiser.from_h(@data)).to eq @data
     end
 
     it "reads nested hashes and arrays" do
       @data = {some: {more: "data"}, many: %w[things in this array]}
 
-      expect(GlobalIdSerialiser.from_json(@data)).to eq @data
+      expect(GlobalIdSerialiser.from_h(@data)).to eq @data
     end
 
     it "reads models" do
@@ -133,7 +131,7 @@ RSpec.describe GlobalIdSerialiser do
       @data = {user: @alice.to_global_id.to_s}
 
       @expected_data = {user: @alice}
-      expect(GlobalIdSerialiser.from_json(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.from_h(@data)).to eq @expected_data
     end
 
     it "reads nested models" do
@@ -142,7 +140,7 @@ RSpec.describe GlobalIdSerialiser do
       @data = {nested: {user: @alice.to_global_id.to_s}, people: [@alice.to_global_id.to_s, @bob.to_global_id.to_s]}
       @expected_data = {nested: {user: @alice}, people: [@alice, @bob]}
 
-      expect(GlobalIdSerialiser.from_json(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.from_h(@data)).to eq @expected_data
     end
 
     it "reads multiple models" do
@@ -157,8 +155,10 @@ RSpec.describe GlobalIdSerialiser do
 
       @expected_data = {users: @users, documents: @documents, more_users: {users: @more_users}}
 
-      expect(GlobalIdSerialiser.from_json(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.from_h(@data)).to eq @expected_data
     end
+
+    it "reads and handles circular references"
   end
 
   describe "deserialising data (as used by ActiveRecord)" do

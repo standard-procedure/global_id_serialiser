@@ -6,13 +6,13 @@ require "global_id"
 require "json"
 
 class GlobalIdSerialiser
-  def self.to_json(data) = pack(data)
+  def self.to_h(data) = pack(data)
 
-  def self.from_json(data) = unpack(data)
+  def self.from_h(data) = unpack(data)
 
-  def self.dump(data) = JSON.generate(to_json(data))
+  def self.dump(data) = JSON.generate(to_h(data))
 
-  def self.load(json) = from_json(JSON.parse(json))
+  def self.load(json) = from_h(JSON.parse(json))
 
   private_class_method def self.pack argument
     case argument
