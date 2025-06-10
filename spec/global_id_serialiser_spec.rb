@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
+require "active_record"
 RSpec.describe GlobalIdSerialiser do
+  include ActiveRecord::Tasks
+
   # standard:disable Lint/ConstantDefinitionInBlock
   class User
     include GlobalID::Identification
@@ -28,6 +31,20 @@ RSpec.describe GlobalIdSerialiser do
     def self.find(id) = records[id.to_s]
 
     def self.records = @records ||= {}
+  end
+
+  class Parent < ActiveRecord::Base
+    include GlobalID::Identification
+    has_many :children, dependent: :destroy
+    serialize :data, coder: GlobalIdSerialiser, type: Hash
+    def to_s = name
+  end
+
+  class Child < ActiveRecord::Base
+    include GlobalID::Identification
+    belongs_to :parent
+    serialize :data, coder: GlobalIdSerialiser, type: Hash
+    def to_s = name
   end
   # standard:enable Lint/ConstantDefinitionInBlock
 
@@ -157,8 +174,6 @@ RSpec.describe GlobalIdSerialiser do
 
       expect(GlobalIdSerialiser.from_h(@data)).to eq @expected_data
     end
-
-    it "reads and handles circular references"
   end
 
   describe "deserialising data (as used by ActiveRecord)" do
@@ -191,6 +206,37 @@ RSpec.describe GlobalIdSerialiser do
       @expected_data = {nested: {user: @alice}, people: [@alice, @bob]}
 
       expect(GlobalIdSerialiser.load(@json)).to eq @expected_data
+    end
+  end
+
+  describe "in ActiveRecord" do
+    it "reads and handles circular references" do
+      FileUtils.rm_f "tmp/test.sqlite3"
+      ActiveRecord::Base.establish_connection adapter: "sqlite3", database: "tmp/test.sqlite3"
+      ActiveRecord::Base.connection.create_table :parents do |t|
+        t.string :name
+        t.text :data
+      end
+      ActiveRecord::Base.connection.create_table :children do |t|
+        t.references :parent
+        t.string :name
+        t.text :data
+      end
+
+      @parent = Parent.create name: "Parent"
+      @first_child = Child.create name: "First", parent: @parent, data: {also_parent: @parent}
+      @second_child = Child.create name: "Second", parent: @parent, data: {also_parent: @parent, sibling: @first_child}
+
+      @parent.update data: {also_children: [@first_child, @second_child]}
+
+      # Reload data with circular references
+      @parent_again = Parent.find @parent.id
+      @first_child_again = Child.find @first_child.id
+      @second_child_again = Child.find @second_child.id
+
+      expect(@parent_again.data[:also_children]).to eq [@first_child_again, @second_child_again]
+      expect(@first_child_again.data[:also_parent]).to eq @parent_again
+      expect(@second_child_again.data[:sibling]).to eq @first_child_again
     end
   end
 end
