@@ -4,12 +4,13 @@ RSpec.describe GlobalIdSerialiser do
   # standard:disable Lint/ConstantDefinitionInBlock
   class User
     include GlobalID::Identification
-    def initialize id:, name:
+    def initialize id:, name:, documents: []
       @id = id
       @name = name
+      @documents = documents
       self.class.records[@id.to_s] = self
     end
-    attr_reader :id, :name
+    attr_reader :id, :name, :documents
 
     def self.find(id) = records[id.to_s]
 
@@ -18,12 +19,13 @@ RSpec.describe GlobalIdSerialiser do
 
   class Document
     include GlobalID::Identification
-    def initialize id:, filename:
+    def initialize id:, filename:, author: nil
       @id = id
       @filename = filename
+      @author = nil
       self.class.records[@id.to_s] = self
     end
-    attr_reader :id, :filename
+    attr_reader :id, :filename, :author
 
     def self.find(id) = records[id.to_s]
 
@@ -37,37 +39,37 @@ RSpec.describe GlobalIdSerialiser do
     expect(GlobalIdSerialiser::VERSION).not_to be nil
   end
 
-  describe "marshalling data" do
-    it "marshals simple types" do
+  describe "writing data to JSON" do
+    it "writes simple types" do
       @data = {hello: "world", number: 999}
 
-      expect(GlobalIdSerialiser.marshal(@data)).to eq @data
+      expect(GlobalIdSerialiser.to_json(@data)).to eq @data
     end
 
-    it "marshals nested hashes and arrays" do
+    it "writes nested hashes and arrays" do
       @data = {some: {more: "data"}, many: %w[things in this array]}
 
-      expect(GlobalIdSerialiser.marshal(@data)).to eq @data
+      expect(GlobalIdSerialiser.to_json(@data)).to eq @data
     end
 
-    it "marshals models" do
+    it "writes models" do
       @alice = User.new(id: 123, name: "Alice")
       @data = {user: @alice}
 
       @expected_data = {user: @alice.to_global_id.to_s}
-      expect(GlobalIdSerialiser.marshal(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.to_json(@data)).to eq @expected_data
     end
 
-    it "marshals nested models" do
+    it "writes nested models" do
       @alice = User.new(id: 123, name: "Alice")
       @bob = User.new(id: 456, name: "Bob")
       @data = {nested: {user: @alice}, people: [@alice, @bob]}
 
       @expected_data = {nested: {user: @alice.to_global_id.to_s}, people: [@alice.to_global_id.to_s, @bob.to_global_id.to_s]}
-      expect(GlobalIdSerialiser.marshal(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.to_json(@data)).to eq @expected_data
     end
 
-    it "marshals multiple models" do
+    it "writes multiple models" do
       @users = (1..10).collect { |i| User.new(id: i, name: i.to_s) }
       @more_users = (100..110).collect { |i| User.new(id: i, name: i.to_s) }
       @documents = (1..10).collect { |i| Document.new(id: i, filename: "#{i}.pdf") }
@@ -78,11 +80,11 @@ RSpec.describe GlobalIdSerialiser do
       @more_user_ids = @more_users.map { |u| u.to_global_id.to_s }
       @document_ids = @documents.map { |d| d.to_global_id.to_s }
       @expected_data = {users: @user_ids, documents: @document_ids, more_users: {users: @more_user_ids}}
-      expect(GlobalIdSerialiser.marshal(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.to_json(@data)).to eq @expected_data
     end
   end
 
-  describe "serialising data" do
+  describe "serialising data (as used by ActiveRecord)" do
     it "serialises simple types" do
       @data = {hello: "world", number: 999}
 
@@ -113,37 +115,37 @@ RSpec.describe GlobalIdSerialiser do
     end
   end
 
-  describe "unmarshalling data" do
-    it "unmarshals simple types" do
+  describe "reads data from JSON" do
+    it "reads simple types" do
       @data = {hello: "world", number: 999}
 
-      expect(GlobalIdSerialiser.unmarshal(@data)).to eq @data
+      expect(GlobalIdSerialiser.from_json(@data)).to eq @data
     end
 
-    it "unmarshals nested hashes and arrays" do
+    it "reads nested hashes and arrays" do
       @data = {some: {more: "data"}, many: %w[things in this array]}
 
-      expect(GlobalIdSerialiser.unmarshal(@data)).to eq @data
+      expect(GlobalIdSerialiser.from_json(@data)).to eq @data
     end
 
-    it "unmarshals models" do
+    it "reads models" do
       @alice = User.new(id: 123, name: "Alice")
       @data = {user: @alice.to_global_id.to_s}
 
       @expected_data = {user: @alice}
-      expect(GlobalIdSerialiser.unmarshal(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.from_json(@data)).to eq @expected_data
     end
 
-    it "unmarshals nested models" do
+    it "reads nested models" do
       @alice = User.new(id: 123, name: "Alice")
       @bob = User.new(id: 456, name: "Bob")
       @data = {nested: {user: @alice.to_global_id.to_s}, people: [@alice.to_global_id.to_s, @bob.to_global_id.to_s]}
       @expected_data = {nested: {user: @alice}, people: [@alice, @bob]}
 
-      expect(GlobalIdSerialiser.unmarshal(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.from_json(@data)).to eq @expected_data
     end
 
-    it "unmarshals multiple models" do
+    it "reads multiple models" do
       @users = (1..10).collect { |i| User.new(id: i, name: i.to_s) }
       @more_users = (100..110).collect { |i| User.new(id: i, name: i.to_s) }
       @documents = (1..10).collect { |i| Document.new(id: i, filename: "#{i}.pdf") }
@@ -155,11 +157,11 @@ RSpec.describe GlobalIdSerialiser do
 
       @expected_data = {users: @users, documents: @documents, more_users: {users: @more_users}}
 
-      expect(GlobalIdSerialiser.unmarshal(@data)).to eq @expected_data
+      expect(GlobalIdSerialiser.from_json(@data)).to eq @expected_data
     end
   end
 
-  describe "deserialising data" do
+  describe "deserialising data (as used by ActiveRecord)" do
     it "deserialises simple types" do
       @json = JSON.generate({hello: "world", number: 999})
 
