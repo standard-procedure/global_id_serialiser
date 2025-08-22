@@ -32,6 +32,6 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "globalid", "~> 1.2"
+  spec.add_dependency "globalid", ">= 1.2"
   spec.add_dependency "json", "~> 2.10"
 end
